@@ -12,8 +12,10 @@ import AVFoundation
 class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
 
     @IBOutlet weak var tablaGrabaciones: UITableView!
+    
     var grabaciones:[Grabacion] = []
     var reproducirAudio:AVAudioPlayer?
+    var audioURL:URL?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -44,9 +46,19 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = UITableViewCell()
+
+        let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
         let grabacion = grabaciones[indexPath.row]
+        
+//        let audioAsset = AVURLAsset.init(url: audioURL!, options: nil)
+//        let duracion = audioAsset.duration
+//        let duracionSecond = CMTimeGetSeconds(duracion)
+        //reproducirAudio?.currentTime = 0
         cell.textLabel?.text = grabacion.nombre
+        //cell.detailTextLabel?.text = String(duracionSecond)
+        
+        cell.detailTextLabel?.text = String(format: "%.2f",(grabacion.duracion))
+        
         return cell
     }
     
@@ -62,5 +74,10 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             } catch {}
         }
     }
+    
+//    @objc func updateSlider(){
+//        Slider.value = Float(reproducirAudio!.currentTime)
+//        //NSLog("HI")
+//    }
 
 }

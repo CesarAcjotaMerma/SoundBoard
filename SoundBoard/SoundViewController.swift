@@ -17,11 +17,15 @@ class SoundViewController: UIViewController {
     @IBOutlet weak var nombreTextField: UITextField!
     @IBOutlet weak var agregarButton: UIButton!
     @IBOutlet weak var viewCard: UIView!
+    @IBOutlet weak var viewCard2: UIView!
+    @IBOutlet weak var Slider: UISlider!
+    @IBOutlet weak var lblDispay: UILabel!
+    @IBOutlet weak var btnPausar: UIButton!
+    @IBOutlet weak var btnStop: UIButton!
+    @IBOutlet weak var controlVolumen: UISlider!
     
     var grabarAudio: AVAudioRecorder?
-    
     var reproducirAudio:AVAudioPlayer?
-    
     var audioURL:URL?
     
     override func viewDidLoad() {
@@ -33,20 +37,35 @@ class SoundViewController: UIViewController {
         viewCard.layer.shadowOffset = CGSize(width: 0.0, height: 0.0)
         viewCard.layer.shadowRadius = 6.0
         viewCard.layer.shadowOpacity = 0.9
-        nombreTextField.layer.cornerRadius = 20.0
-        agregarButton.layer.cornerRadius = 15.0
-        agregarButton.layer.shadowColor = UIColor.gray.cgColor
-        agregarButton.layer.shadowOffset = CGSize(width: 0.0, height: 0.0)
-        agregarButton.layer.shadowRadius = 6.0
-        agregarButton.layer.shadowOpacity = 0.7
+        
+        viewCard2.layer.cornerRadius = 15.0
+        
+        agregarButton.layer.cornerRadius = 20.0
+        
+        btnPausar.backgroundColor = UIColor.white
+        btnPausar.layer.cornerRadius = 20.0
+        btnPausar.isEnabled = false
+        
+        btnStop.backgroundColor = UIColor.white
+        btnStop.layer.cornerRadius = 20.0
+        btnStop.isEnabled = false
+        
+        reproducirButton.backgroundColor = UIColor.white
+        reproducirButton.layer.cornerRadius = 20.0
+        reproducirButton.isEnabled = false
         
         reproducirButton.isEnabled = false
         agregarButton.isEnabled = false
+        Slider.isEnabled = false
+        controlVolumen.isHidden = true
+        
+        
+        controlVolumen.transform = CGAffineTransform(rotationAngle: CGFloat(-Double.pi / 2))
     }
     
     @IBAction func grabarTapped(_ sender: Any) {
         if grabarAudio!.isRecording{
-            //detener grabcaion
+            //detener grabacion
             grabarAudio?.stop()
             //cambiar text del boton grabar
             grabarButton.setTitle("GRABAR", for: .normal)
@@ -58,24 +77,83 @@ class SoundViewController: UIViewController {
             //cambiar el texto del boton grabar a detener
             grabarButton.setTitle("DETENER", for: .normal)
             reproducirButton.isEnabled = false
+            controlVolumen.isHidden = false
         }
     }
     
     @IBAction func reproducirTapped(_ sender: Any) {
         do {
             try reproducirAudio = AVAudioPlayer(contentsOf: audioURL!)
+            reproducirAudio!.prepareToPlay()
+            reproducirAudio!.currentTime = 0
+            let audioAsset = AVURLAsset.init(url: audioURL!, options: nil)
+            let duracion = audioAsset.duration
+            let duracionSecond = CMTimeGetSeconds(duracion)
+            print("Duracion del audio: \(duracionSecond)")
+            
+            Slider.maximumValue = Float(reproducirAudio!.duration)
+            Timer.scheduledTimer(timeInterval: 0.1, target:self,selector: Selector(("updateSlider")), userInfo: nil, repeats: true)
+           lblDispay.text = "\(reproducirAudio!.currentTime)"
+           Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true, block: { (timer) in
+               self.lblDispay.text = "\(round(self.reproducirAudio!.currentTime*10)/10)"
+             })
             reproducirAudio!.play()
             print("Reproduciendo")
+            btnPausar.isEnabled = true
+            btnStop.isEnabled = true
+            Slider.isEnabled = true
         } catch {}
+    }
+    
+    
+    @IBAction func pausarTapped(_ sender: Any) {
+        if reproducirAudio!.isPlaying{
+            reproducirAudio!.pause()
+        }else{
+            reproducirAudio?.play()       }
+    }
+    
+    @IBAction func stopTapped(_ sender: Any) {
+        if reproducirAudio!.isPlaying{
+            reproducirAudio!.stop()
+            reproducirAudio!.currentTime = 0
+        }else{
+            reproducirAudio?.prepareToPlay()
+            reproducirAudio!.currentTime = 0
+        }
     }
     
     @IBAction func agregarTapped(_ sender: Any) {
         let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
         let grabacion = Grabacion(context: context)
+        let audioAsset = AVURLAsset.init(url: audioURL!, options: nil)
+        let duracion = audioAsset.duration
+        let duracionSecond = (CMTimeGetSeconds(duracion)/60.0)
         grabacion.nombre = nombreTextField.text
         grabacion.audio = NSData(contentsOf: audioURL!)! as Data
+        grabacion.duracion = Float(duracionSecond)
         (UIApplication.shared.delegate as! AppDelegate).saveContext()
         navigationController!.popViewController(animated: true)
+    }
+    
+    @IBAction func controlReproduccion(_ sender: Any) {
+        
+        reproducirAudio!.pause();
+        reproducirAudio!.currentTime = TimeInterval(Slider.value)
+        reproducirAudio!.pause()
+        reproducirAudio!.play()
+    }
+    
+    @objc func updateSlider(){
+        Slider.value = Float(reproducirAudio!.currentTime)
+        //NSLog("HI")
+    }
+    
+    //Control del volumen
+    
+    @IBAction func controlVolumen(_ sender: UISlider) {
+        reproducirAudio!.volume = sender.value
+        print(sender.value)
     }
     
     func configurarGrabacion(){
@@ -108,15 +186,5 @@ class SoundViewController: UIViewController {
             print(error)
         }
     }
-    
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destination.
-        // Pass the selected object to the new view controller.
-    }
-    */
 
 }
